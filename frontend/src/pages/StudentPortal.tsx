@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { attendanceApi, sessionsApi } from '../services/api';
+import { attendanceApi } from '../services/api';
 import { RegisterAttendanceDto, Student, AttendanceDto } from '../types';
 
 export default function StudentPortal() {

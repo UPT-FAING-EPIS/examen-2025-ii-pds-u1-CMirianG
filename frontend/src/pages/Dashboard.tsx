@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Calendar, Users, TrendingUp, AlertTriangle } from 'lucide-react';
 import { coursesApi, sessionsApi, attendanceApi, reportsApi } from '../services/api';
-import { Course, Session, Student } from '../types';
+import { Session } from '../types';
 
 interface DashboardStats {
   totalCourses: number;
