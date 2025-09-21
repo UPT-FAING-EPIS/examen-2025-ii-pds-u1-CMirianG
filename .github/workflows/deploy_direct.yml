@@ -22,6 +22,7 @@ jobs:
     - name: Restore and Build
       run: |
         cd backend/AttendanceSystem.API
+        dotnet clean
         dotnet restore
         dotnet build --configuration Release --no-restore
         dotnet publish --configuration Release --no-build --output ./publish

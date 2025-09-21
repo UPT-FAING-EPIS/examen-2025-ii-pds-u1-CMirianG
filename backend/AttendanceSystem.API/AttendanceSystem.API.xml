@@ -4,5 +4,17 @@
         <name>AttendanceSystem.API</name>
     </assembly>
     <members>
+        <member name="T:AttendanceSystem.API.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:AttendanceSystem.API.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:AttendanceSystem.API.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:AttendanceSystem.API.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
     </members>
 </doc>
