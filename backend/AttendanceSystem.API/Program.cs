@@ -14,10 +14,19 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext with SQLite
+// Add DbContext with SQL Server for production or SQLite for development
 builder.Services.AddDbContext<AttendanceContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
-                     "Data Source=attendance.db"));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (builder.Environment.IsProduction() && !string.IsNullOrEmpty(connectionString) && connectionString.Contains("tcp:"))
+    {
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        options.UseSqlite(connectionString ?? "Data Source=attendance.db");
+    }
+});
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
