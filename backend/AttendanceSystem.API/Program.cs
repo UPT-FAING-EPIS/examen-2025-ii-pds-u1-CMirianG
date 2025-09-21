@@ -14,35 +14,9 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext - Support multiple databases
+// Add DbContext - Use In-Memory Database (no external dependencies)
 builder.Services.AddDbContext<AttendanceContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        if (connectionString.Contains("postgresql://") || connectionString.Contains("postgres://"))
-        {
-            // Use PostgreSQL for production (Supabase)
-            options.UseNpgsql(connectionString);
-        }
-        else if (connectionString.Contains("tcp:") || connectionString.Contains("database.windows.net"))
-        {
-            // Use SQL Server for Azure SQL
-            options.UseSqlServer(connectionString);
-        }
-        else
-        {
-            // Use SQLite for local development
-            options.UseSqlite(connectionString);
-        }
-    }
-    else
-    {
-        // Default to SQLite
-        options.UseSqlite("Data Source=attendance.db");
-    }
-});
+    options.UseInMemoryDatabase("AttendanceDB"));
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -80,18 +54,47 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure database is created
+// Initialize in-memory database with sample data
 using (var scope = app.Services.CreateScope())
 {
-    try
+    var context = scope.ServiceProvider.GetRequiredService<AttendanceContext>();
+    
+    // Ensure database is created (for in-memory, this just initializes)
+    context.Database.EnsureCreated();
+    
+    // Add additional sample data if needed
+    if (!context.Sessions.Any())
     {
-        var context = scope.ServiceProvider.GetRequiredService<AttendanceContext>();
-        context.Database.EnsureCreated();
-    }
-    catch (Exception ex)
-    {
-        // Log error but don't stop the app
-        Console.WriteLine($"Database initialization error: {ex.Message}");
+        // Add sample sessions for today
+        var today = DateTime.Today;
+        var sessions = new[]
+        {
+            new Session
+            {
+                Id = 1,
+                CourseId = 1,
+                Title = "Introducción a la Programación Web",
+                Date = today,
+                StartTime = TimeSpan.FromHours(10),
+                EndTime = TimeSpan.FromHours(12),
+                UniqueCode = "123456",
+                IsActive = true
+            },
+            new Session
+            {
+                Id = 2,
+                CourseId = 2,
+                Title = "Fundamentos de Base de Datos",
+                Date = today,
+                StartTime = TimeSpan.FromHours(14),
+                EndTime = TimeSpan.FromHours(16),
+                UniqueCode = "789012",
+                IsActive = true
+            }
+        };
+        
+        context.Sessions.AddRange(sessions);
+        context.SaveChanges();
     }
 }
 
