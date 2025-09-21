@@ -14,19 +14,9 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext with SQL Server for production or SQLite for development
+// Add DbContext - Use SQLite for simplicity (works in Azure too)
 builder.Services.AddDbContext<AttendanceContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (builder.Environment.IsProduction() && !string.IsNullOrEmpty(connectionString) && connectionString.Contains("tcp:"))
-    {
-        options.UseSqlServer(connectionString);
-    }
-    else
-    {
-        options.UseSqlite(connectionString ?? "Data Source=attendance.db");
-    }
-});
+    options.UseSqlite("Data Source=attendance.db"));
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -49,11 +39,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for demo purposes
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Add basic health check endpoint
+app.MapGet("/health", () => "OK");
 
 app.UseHttpsRedirection();
 
@@ -66,8 +57,16 @@ app.MapControllers();
 // Ensure database is created
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<AttendanceContext>();
-    context.Database.EnsureCreated();
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AttendanceContext>();
+        context.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        // Log error but don't stop the app
+        Console.WriteLine($"Database initialization error: {ex.Message}");
+    }
 }
 
 app.Run();
