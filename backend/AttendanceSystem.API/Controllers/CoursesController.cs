@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AttendanceSystem.API.Data;
 using AttendanceSystem.API.Models;
+using AttendanceSystem.API.Interfaces;
 
 namespace AttendanceSystem.API.Controllers
 {
@@ -10,46 +11,73 @@ namespace AttendanceSystem.API.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly AttendanceContext _context;
+        private readonly IRepository<Course> _courseRepository;
 
-        public CoursesController(AttendanceContext context)
+        public CoursesController(AttendanceContext context, IRepository<Course> courseRepository)
         {
             _context = context;
+            _courseRepository = courseRepository;
         }
 
         // GET: api/courses
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Course>>> GetCourses()
         {
-            return await _context.Courses
-                .Where(c => c.IsActive)
-                .Include(c => c.Sessions)
-                .ToListAsync();
+            try
+            {
+                var courses = await _context.Courses
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+                return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error getting courses: {ex.Message}");
+            }
         }
 
         // GET: api/courses/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Course>> GetCourse(int id)
         {
-            var course = await _context.Courses
-                .Include(c => c.Sessions.Where(s => s.IsActive))
-                .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
-
-            if (course == null)
+            try
             {
-                return NotFound();
-            }
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
-            return course;
+                if (course == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(course);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error getting course: {ex.Message}");
+            }
         }
 
         // POST: api/courses
         [HttpPost]
         public async Task<ActionResult<Course>> PostCourse(Course course)
         {
-            _context.Courses.Add(course);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCourse", new { id = course.Id }, course);
+            try
+            {
+                // Set default values
+                course.IsActive = true;
+                course.CreatedAt = DateTime.UtcNow;
+                
+                // Use context directly for in-memory database
+                _context.Courses.Add(course);
+                await _context.SaveChangesAsync();
+                
+                return CreatedAtAction("GetCourse", new { id = course.Id }, course);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error creating course: {ex.Message}");
+            }
         }
 
         // PUT: api/courses/{id}
@@ -58,44 +86,55 @@ namespace AttendanceSystem.API.Controllers
         {
             if (id != course.Id)
             {
-                return BadRequest();
+                return BadRequest("ID mismatch");
             }
-
-            _context.Entry(course).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CourseExists(id))
+                var existingCourse = await _context.Courses.FindAsync(id);
+                if (existingCourse == null)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
-            }
 
-            return NoContent();
+                // Update properties
+                existingCourse.Name = course.Name;
+                existingCourse.Code = course.Code;
+                existingCourse.Description = course.Description;
+                existingCourse.InstructorName = course.InstructorName;
+                existingCourse.IsActive = course.IsActive;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error updating course: {ex.Message}");
+            }
         }
 
         // DELETE: api/courses/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourse(int id)
         {
-            var course = await _context.Courses.FindAsync(id);
-            if (course == null)
+            try
             {
-                return NotFound();
+                var course = await _context.Courses.FindAsync(id);
+                if (course == null)
+                {
+                    return NotFound();
+                }
+
+                // Soft delete
+                course.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            course.IsActive = false;
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return BadRequest($"Error deleting course: {ex.Message}");
+            }
         }
 
         private bool CourseExists(int id)

@@ -75,17 +75,7 @@ namespace AttendanceSystem.API.Data
                 entity.HasIndex(e => new { e.StudentId, e.SessionId }).IsUnique();
             });
 
-            // Seed data
-            modelBuilder.Entity<Student>().HasData(
-                new Student { Id = 1, FirstName = "Juan", LastName = "Pérez", Email = "juan.perez@email.com", StudentCode = "EST001" },
-                new Student { Id = 2, FirstName = "María", LastName = "González", Email = "maria.gonzalez@email.com", StudentCode = "EST002" },
-                new Student { Id = 3, FirstName = "Carlos", LastName = "Rodríguez", Email = "carlos.rodriguez@email.com", StudentCode = "EST003" }
-            );
-
-            modelBuilder.Entity<Course>().HasData(
-                new Course { Id = 1, Name = "Programación Web", Code = "PW001", Description = "Curso de desarrollo web con tecnologías modernas", InstructorName = "Dr. Ana López" },
-                new Course { Id = 2, Name = "Base de Datos", Code = "BD001", Description = "Fundamentos de bases de datos relacionales", InstructorName = "Ing. Roberto Silva" }
-            );
+            // Note: Seed data for in-memory database will be handled in Program.cs
         }
     }
 }

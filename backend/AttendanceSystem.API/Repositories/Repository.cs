@@ -33,16 +33,30 @@ namespace AttendanceSystem.API.Repositories
 
         public virtual async Task<T> AddAsync(T entity)
         {
-            await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
-            return entity;
+            try
+            {
+                _dbSet.Add(entity);
+                await _context.SaveChangesAsync();
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error adding entity: {ex.Message}", ex);
+            }
         }
 
         public virtual async Task<T> UpdateAsync(T entity)
         {
-            _dbSet.Update(entity);
-            await _context.SaveChangesAsync();
-            return entity;
+            try
+            {
+                _context.Entry(entity).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error updating entity: {ex.Message}", ex);
+            }
         }
 
         public virtual async Task DeleteAsync(int id)

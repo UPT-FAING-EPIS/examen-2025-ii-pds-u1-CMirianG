@@ -54,13 +54,22 @@ namespace AttendanceSystem.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Session>> PostSession(Session session)
         {
-            // Generate unique code
-            session.UniqueCode = GenerateUniqueCode();
-            
-            _context.Sessions.Add(session);
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Set default values
+                session.UniqueCode = GenerateUniqueCode();
+                session.IsActive = true;
+                session.CreatedAt = DateTime.UtcNow;
+                
+                _context.Sessions.Add(session);
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetSession", new { id = session.Id }, session);
+                return CreatedAtAction("GetSession", new { id = session.Id }, session);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error creating session: {ex.Message}");
+            }
         }
 
         // PUT: api/sessions/{id}

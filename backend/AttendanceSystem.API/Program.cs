@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -60,40 +60,65 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AttendanceContext>();
     
-    // Ensure database is created (for in-memory, this just initializes)
+    // Ensure database is created
     context.Database.EnsureCreated();
     
-    // Add additional sample data if needed
+    // Add sample data if database is empty
+    if (!context.Students.Any())
+    {
+        // Add students
+        var students = new[]
+        {
+            new Student { FirstName = "Juan", LastName = "Pérez", Email = "juan.perez@email.com", StudentCode = "EST001", CreatedAt = DateTime.UtcNow },
+            new Student { FirstName = "María", LastName = "González", Email = "maria.gonzalez@email.com", StudentCode = "EST002", CreatedAt = DateTime.UtcNow },
+            new Student { FirstName = "Carlos", LastName = "Rodríguez", Email = "carlos.rodriguez@email.com", StudentCode = "EST003", CreatedAt = DateTime.UtcNow }
+        };
+        context.Students.AddRange(students);
+        context.SaveChanges();
+    }
+    
+    if (!context.Courses.Any())
+    {
+        // Add courses
+        var courses = new[]
+        {
+            new Course { Name = "Programación Web", Code = "PW001", Description = "Curso de desarrollo web con tecnologías modernas", InstructorName = "Dr. Ana López", IsActive = true, CreatedAt = DateTime.UtcNow },
+            new Course { Name = "Base de Datos", Code = "BD001", Description = "Fundamentos de bases de datos relacionales", InstructorName = "Ing. Roberto Silva", IsActive = true, CreatedAt = DateTime.UtcNow }
+        };
+        context.Courses.AddRange(courses);
+        context.SaveChanges();
+    }
+    
     if (!context.Sessions.Any())
     {
         // Add sample sessions for today
         var today = DateTime.Today;
-        var session1 = new Session
+        var sessions = new[]
         {
-            Id = 1,
-            CourseId = 1,
-            Title = "Introducción a la Programación Web",
-            Date = today,
-            StartTime = TimeSpan.FromHours(10),
-            EndTime = TimeSpan.FromHours(12),
-            UniqueCode = "123456",
-            IsActive = true
+            new Session
+            {
+                CourseId = 1,
+                Title = "Introducción a la Programación Web",
+                Date = today,
+                StartTime = TimeSpan.FromHours(10),
+                EndTime = TimeSpan.FromHours(12),
+                UniqueCode = "123456",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Session
+            {
+                CourseId = 2,
+                Title = "Fundamentos de Base de Datos",
+                Date = today,
+                StartTime = TimeSpan.FromHours(14),
+                EndTime = TimeSpan.FromHours(16),
+                UniqueCode = "789012",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            }
         };
-        
-        var session2 = new Session
-        {
-            Id = 2,
-            CourseId = 2,
-            Title = "Fundamentos de Base de Datos",
-            Date = today,
-            StartTime = TimeSpan.FromHours(14),
-            EndTime = TimeSpan.FromHours(16),
-            UniqueCode = "789012",
-            IsActive = true
-        };
-        
-        context.Sessions.Add(session1);
-        context.Sessions.Add(session2);
+        context.Sessions.AddRange(sessions);
         context.SaveChanges();
     }
 }
