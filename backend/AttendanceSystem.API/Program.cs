@@ -1,17 +1,29 @@
 using Microsoft.EntityFrameworkCore;
 using AttendanceSystem.API.Data;
+using AttendanceSystem.API.Interfaces;
+using AttendanceSystem.API.Repositories;
+using AttendanceSystem.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
+});
 
 // Add DbContext with SQLite
 builder.Services.AddDbContext<AttendanceContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
                      "Data Source=attendance.db"));
+
+// Add Repository Pattern
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// Add Services
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
