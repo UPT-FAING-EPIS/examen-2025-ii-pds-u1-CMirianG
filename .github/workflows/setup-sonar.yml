@@ -1,0 +1,147 @@
+name: Setup SonarQube
+
+on:
+  workflow_dispatch:
+    inputs:
+      setup_type:
+        description: 'Setup type'
+        required: true
+        type: choice
+        options:
+        - 'check-status'
+        - 'generate-token-help'
+        - 'validate-config'
+        default: 'check-status'
+
+jobs:
+  sonar-setup:
+    name: SonarQube Setup Helper
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Check SonarQube Status
+      if: ${{ github.event.inputs.setup_type == 'check-status' }}
+      run: |
+        echo "## 🔍 SonarQube Configuration Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -n "${{ secrets.SONAR_TOKEN }}" ]; then
+          echo "✅ **SONAR_TOKEN**: Configured" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **Status**: Ready for SonarQube analysis" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **SONAR_TOKEN**: Not configured" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Status**: Running in local mode only" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 **Project Configuration**" >> $GITHUB_STEP_SUMMARY
+        echo "- **Project Key**: examen-2025-ii-pds-u1-CMirianG" >> $GITHUB_STEP_SUMMARY
+        echo "- **Organization**: cmiriang" >> $GITHUB_STEP_SUMMARY
+        echo "- **Host URL**: https://sonarcloud.io" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 **SonarCloud Project URL**" >> $GITHUB_STEP_SUMMARY
+        echo "[View Project](https://sonarcloud.io/project/overview?id=examen-2025-ii-pds-u1-CMirianG)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Generate Token Help
+      if: ${{ github.event.inputs.setup_type == 'generate-token-help' }}
+      run: |
+        echo "## 🔑 How to Generate SonarQube Token" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 **Step-by-Step Instructions**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "1. **Go to SonarCloud**" >> $GITHUB_STEP_SUMMARY
+        echo "   - Visit: https://sonarcloud.io" >> $GITHUB_STEP_SUMMARY
+        echo "   - Sign up/Login with GitHub" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "2. **Create Organization**" >> $GITHUB_STEP_SUMMARY
+        echo "   - Click 'Create Organization'" >> $GITHUB_STEP_SUMMARY
+        echo "   - Choose 'cmiriang' as organization key" >> $GITHUB_STEP_SUMMARY
+        echo "   - Select 'Import repositories from GitHub'" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "3. **Import Project**" >> $GITHUB_STEP_SUMMARY
+        echo "   - Select 'examen-2025-ii-pds-u1-CMirianG' repository" >> $GITHUB_STEP_SUMMARY
+        echo "   - Choose 'Free' plan" >> $GITHUB_STEP_SUMMARY
+        echo "   - Configure analysis settings" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "4. **Generate Token**" >> $GITHUB_STEP_SUMMARY
+        echo "   - Go to 'My Account' → 'Security'" >> $GITHUB_STEP_SUMMARY
+        echo "   - Click 'Generate Tokens'" >> $GITHUB_STEP_SUMMARY
+        echo "   - Name: 'GitHub Actions - Attendance System'" >> $GITHUB_STEP_SUMMARY
+        echo "   - Copy the generated token" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "5. **Add to GitHub Secrets**" >> $GITHUB_STEP_SUMMARY
+        echo "   - Go to repository Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+        echo "   - Click 'New repository secret'" >> $GITHUB_STEP_SUMMARY
+        echo "   - Name: \`SONAR_TOKEN\`" >> $GITHUB_STEP_SUMMARY
+        echo "   - Value: [paste the token]" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ **Verification**" >> $GITHUB_STEP_SUMMARY
+        echo "After adding the token, the next SonarQube analysis will use SonarCloud." >> $GITHUB_STEP_SUMMARY
+
+    - name: Validate Configuration
+      if: ${{ github.event.inputs.setup_type == 'validate-config' }}
+      run: |
+        echo "## ✅ SonarQube Configuration Validation" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if sonar-project.properties exists
+        if [ -f "sonar-project.properties" ]; then
+          echo "✅ **sonar-project.properties**: Found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **sonar-project.properties**: Missing" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Check if workflow exists
+        if [ -f ".github/workflows/sonar.yml" ]; then
+          echo "✅ **SonarQube workflow**: Found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **SonarQube workflow**: Missing" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Validate project configuration
+        PROJECT_KEY=$(grep "sonar.projectKey" sonar-project.properties | cut -d'=' -f2)
+        ORG=$(grep "sonar.organization" sonar-project.properties | cut -d'=' -f2)
+        HOST=$(grep "sonar.host.url" sonar-project.properties | cut -d'=' -f2)
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 **Configuration Details**" >> $GITHUB_STEP_SUMMARY
+        echo "- **Project Key**: $PROJECT_KEY" >> $GITHUB_STEP_SUMMARY
+        echo "- **Organization**: $ORG" >> $GITHUB_STEP_SUMMARY
+        echo "- **Host URL**: $HOST" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$PROJECT_KEY" == "examen-2025-ii-pds-u1-CMirianG" ] && [ "$ORG" == "cmiriang" ]; then
+          echo "✅ **Configuration**: Valid" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Configuration**: Invalid - check sonar-project.properties" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 **Next Steps**" >> $GITHUB_STEP_SUMMARY
+        if [ -n "${{ secrets.SONAR_TOKEN }}" ]; then
+          echo "✅ All configuration is correct. SonarQube analysis is ready!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Add SONAR_TOKEN secret to enable full analysis" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Setup Summary
+      run: |
+        echo "## 🎯 SonarQube Setup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📚 **Documentation**" >> $GITHUB_STEP_SUMMARY
+        echo "- [SONARQUBE_SETUP.md](./SONARQUBE_SETUP.md) - Complete setup guide" >> $GITHUB_STEP_SUMMARY
+        echo "- [SonarCloud Documentation](https://docs.sonarcloud.io/)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 **Available Actions**" >> $GITHUB_STEP_SUMMARY
+        echo "1. **check-status** - Check current configuration status" >> $GITHUB_STEP_SUMMARY
+        echo "2. **generate-token-help** - Step-by-step token generation guide" >> $GITHUB_STEP_SUMMARY
+        echo "3. **validate-config** - Validate project configuration" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 💡 **Quick Start**" >> $GITHUB_STEP_SUMMARY
+        echo "1. Run this workflow with 'generate-token-help' to get detailed instructions" >> $GITHUB_STEP_SUMMARY
+        echo "2. Follow the steps to create SonarCloud account and generate token" >> $GITHUB_STEP_SUMMARY
+        echo "3. Add the token as SONAR_TOKEN secret in repository settings" >> $GITHUB_STEP_SUMMARY
+        echo "4. Run 'check-status' to verify everything is working" >> $GITHUB_STEP_SUMMARY

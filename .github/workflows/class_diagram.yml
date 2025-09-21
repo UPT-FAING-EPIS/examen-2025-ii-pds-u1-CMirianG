@@ -1,0 +1,505 @@
+name: Class Diagram Generation
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'backend/**/*.cs'
+      - 'frontend/src/**/*.ts'
+      - 'frontend/src/**/*.tsx'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**/*.cs'
+      - 'frontend/src/**/*.ts'
+      - 'frontend/src/**/*.tsx'
+  workflow_dispatch:
+
+jobs:
+  generate-class-diagram:
+    name: Generate Class Diagram
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install PlantUML
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y default-jre
+        wget http://sourceforge.net/projects/plantuml/files/plantuml.jar/download -O plantuml.jar
+        sudo mv plantuml.jar /usr/local/bin/
+
+    - name: Install dependencies
+      run: |
+        cd backend/AttendanceSystem.API
+        dotnet restore
+        cd ../../frontend
+        npm ci
+
+    - name: Generate Backend Class Diagram
+      run: |
+        mkdir -p docs/diagrams
+        
+        # Create PlantUML class diagram for backend
+        cat > docs/diagrams/backend-class-diagram.puml << 'EOF'
+        @startuml Backend Class Diagram
+        
+        !define ENTITY_COLOR #E1F5FE
+        !define CONTROLLER_COLOR #F3E5F5
+        !define SERVICE_COLOR #E8F5E8
+        !define REPOSITORY_COLOR #FFF3E0
+        !define DTO_COLOR #FCE4EC
+        
+        package "Models" {
+          class Attendance {
+            + int Id
+            + int SessionId
+            + int StudentId
+            + DateTime Timestamp
+            + bool IsPresent
+            + Session Session
+            + Student Student
+          }
+          
+          class Session {
+            + int Id
+            + int CourseId
+            + DateTime Date
+            + string Location
+            + Course Course
+            + List<Attendance> Attendances
+          }
+          
+          class Course {
+            + int Id
+            + string Name
+            + string Code
+            + string Description
+            + List<Session> Sessions
+          }
+          
+          class Student {
+            + int Id
+            + string FirstName
+            + string LastName
+            + string Email
+            + string StudentId
+            + List<Attendance> Attendances
+          }
+        }
+        
+        package "Controllers" {
+          class AttendanceController {
+            - IAttendanceService _attendanceService
+            + GetAttendances()
+            + GetAttendance(int id)
+            + CreateAttendance(AttendanceDto dto)
+            + UpdateAttendance(int id, AttendanceDto dto)
+            + DeleteAttendance(int id)
+          }
+          
+          class SessionsController {
+            + GetSessions()
+            + GetSession(int id)
+            + CreateSession(SessionDto dto)
+            + UpdateSession(int id, SessionDto dto)
+            + DeleteSession(int id)
+          }
+          
+          class CoursesController {
+            + GetCourses()
+            + GetCourse(int id)
+            + CreateCourse(CourseDto dto)
+            + UpdateCourse(int id, CourseDto dto)
+            + DeleteCourse(int id)
+          }
+          
+          class ReportsController {
+            - IAttendanceService _attendanceService
+            + GetAttendanceReport(int courseId)
+            + GetStudentReport(int studentId)
+            + GetSessionReport(int sessionId)
+          }
+        }
+        
+        package "Services" {
+          class AttendanceService {
+            - IRepository<Attendance> _attendanceRepository
+            - IRepository<Session> _sessionRepository
+            - IRepository<Student> _studentRepository
+            + GetAllAttendances()
+            + GetAttendanceById(int id)
+            + CreateAttendance(AttendanceDto dto)
+            + UpdateAttendance(int id, AttendanceDto dto)
+            + DeleteAttendance(int id)
+            + GetAttendancesBySession(int sessionId)
+            + GetAttendancesByStudent(int studentId)
+          }
+        }
+        
+        package "Repositories" {
+          class Repository<T> {
+            - AttendanceContext _context
+            + GetAll()
+            + GetById(int id)
+            + Add(T entity)
+            + Update(T entity)
+            + Delete(int id)
+          }
+        }
+        
+        package "DTOs" {
+          class AttendanceDto {
+            + int Id
+            + int SessionId
+            + int StudentId
+            + DateTime Timestamp
+            + bool IsPresent
+          }
+        }
+        
+        package "Data" {
+          class AttendanceContext {
+            + DbSet<Attendance> Attendances
+            + DbSet<Session> Sessions
+            + DbSet<Course> Courses
+            + DbSet<Student> Students
+            + OnModelCreating(ModelBuilder modelBuilder)
+          }
+        }
+        
+        package "Interfaces" {
+          interface IAttendanceService {
+            + GetAllAttendances()
+            + GetAttendanceById(int id)
+            + CreateAttendance(AttendanceDto dto)
+            + UpdateAttendance(int id, AttendanceDto dto)
+            + DeleteAttendance(int id)
+          }
+          
+          interface IRepository<T> {
+            + GetAll()
+            + GetById(int id)
+            + Add(T entity)
+            + Update(T entity)
+            + Delete(int id)
+          }
+        }
+        
+        ' Relationships
+        AttendanceController --> IAttendanceService
+        AttendanceService --> IRepository<Attendance>
+        AttendanceService --> IRepository<Session>
+        AttendanceService --> IRepository<Student>
+        Repository<T> --> AttendanceContext
+        
+        Attendance --> Session
+        Attendance --> Student
+        Session --> Course
+        
+        AttendanceController --> AttendanceDto
+        AttendanceService --> AttendanceDto
+        
+        AttendanceContext --> Attendance
+        AttendanceContext --> Session
+        AttendanceContext --> Course
+        AttendanceContext --> Student
+        
+        @enduml
+        EOF
+
+    - name: Generate Frontend Class Diagram
+      run: |
+        # Create PlantUML class diagram for frontend
+        cat > docs/diagrams/frontend-class-diagram.puml << 'EOF'
+        @startuml Frontend Class Diagram
+        
+        !define COMPONENT_COLOR #E3F2FD
+        !define PAGE_COLOR #F1F8E9
+        !define SERVICE_COLOR #FFF8E1
+        !define TYPE_COLOR #FCE4EC
+        
+        package "Pages" {
+          class Dashboard {
+            + useEffect()
+            + render()
+          }
+          
+          class Attendance {
+            + useState()
+            + handleSubmit()
+            + render()
+          }
+          
+          class Courses {
+            + useState()
+            + handleCreate()
+            + handleEdit()
+            + handleDelete()
+            + render()
+          }
+          
+          class Sessions {
+            + useState()
+            + handleCreate()
+            + handleEdit()
+            + handleDelete()
+            + render()
+          }
+          
+          class Reports {
+            + useState()
+            + handleGenerateReport()
+            + render()
+          }
+          
+          class StudentPortal {
+            + useState()
+            + handleMarkAttendance()
+            + render()
+          }
+        }
+        
+        package "Components" {
+          class Layout {
+            + render()
+            + navigation
+          }
+        }
+        
+        package "Services" {
+          class ApiService {
+            + get(url)
+            + post(url, data)
+            + put(url, data)
+            + delete(url)
+            + axios instance
+          }
+        }
+        
+        package "Types" {
+          class Attendance {
+            + id: number
+            + sessionId: number
+            + studentId: number
+            + timestamp: string
+            + isPresent: boolean
+          }
+          
+          class Session {
+            + id: number
+            + courseId: number
+            + date: string
+            + location: string
+          }
+          
+          class Course {
+            + id: number
+            + name: string
+            + code: string
+            + description: string
+          }
+          
+          class Student {
+            + id: number
+            + firstName: string
+            + lastName: string
+            + email: string
+            + studentId: string
+          }
+        }
+        
+        ' Relationships
+        Layout --> Dashboard
+        Layout --> Attendance
+        Layout --> Courses
+        Layout --> Sessions
+        Layout --> Reports
+        Layout --> StudentPortal
+        
+        Attendance --> ApiService
+        Courses --> ApiService
+        Sessions --> ApiService
+        Reports --> ApiService
+        StudentPortal --> ApiService
+        
+        Attendance --> Attendance
+        Sessions --> Session
+        Courses --> Course
+        
+        @enduml
+        EOF
+
+    - name: Generate Combined Architecture Diagram
+      run: |
+        # Create a combined architecture diagram
+        cat > docs/diagrams/system-architecture.puml << 'EOF'
+        @startuml System Architecture
+        
+        !define FRONTEND_COLOR #E3F2FD
+        !define BACKEND_COLOR #E8F5E8
+        !define DATABASE_COLOR #FFF3E0
+        !define AZURE_COLOR #F3E5F5
+        
+        package "Frontend (React)" {
+          [Dashboard]
+          [Attendance Management]
+          [Course Management]
+          [Session Management]
+          [Reports]
+          [Student Portal]
+        }
+        
+        package "Backend (.NET 8)" {
+          [Attendance Controller]
+          [Sessions Controller]
+          [Courses Controller]
+          [Reports Controller]
+          [Attendance Service]
+          [Repository Pattern]
+        }
+        
+        package "Database (Azure SQL)" {
+          [Attendance Table]
+          [Session Table]
+          [Course Table]
+          [Student Table]
+        }
+        
+        package "Azure Infrastructure" {
+          [App Service]
+          [Static Web App]
+          [Application Insights]
+          [Log Analytics]
+        }
+        
+        ' Frontend to Backend
+        [Dashboard] --> [Attendance Controller]
+        [Attendance Management] --> [Attendance Controller]
+        [Course Management] --> [Courses Controller]
+        [Session Management] --> [Sessions Controller]
+        [Reports] --> [Reports Controller]
+        [Student Portal] --> [Attendance Controller]
+        
+        ' Backend to Service
+        [Attendance Controller] --> [Attendance Service]
+        [Reports Controller] --> [Attendance Service]
+        
+        ' Service to Repository
+        [Attendance Service] --> [Repository Pattern]
+        
+        ' Repository to Database
+        [Repository Pattern] --> [Attendance Table]
+        [Repository Pattern] --> [Session Table]
+        [Repository Pattern] --> [Course Table]
+        [Repository Pattern] --> [Student Table]
+        
+        ' Azure Hosting
+        [App Service] --> [Attendance Controller]
+        [Static Web App] --> [Dashboard]
+        [Application Insights] --> [Attendance Controller]
+        
+        @enduml
+        EOF
+
+    - name: Convert PlantUML to Images
+      run: |
+        # Convert PlantUML files to PNG
+        java -jar /usr/local/bin/plantuml.jar docs/diagrams/backend-class-diagram.puml
+        java -jar /usr/local/bin/plantuml.jar docs/diagrams/frontend-class-diagram.puml
+        java -jar /usr/local/bin/plantuml.jar docs/diagrams/system-architecture.puml
+
+    - name: Create Documentation
+      run: |
+        # Create main documentation file
+        cat > docs/diagrams/README.md << 'EOF'
+        # Class Diagrams and System Architecture
+        
+        This directory contains the class diagrams and system architecture documentation for the Attendance System.
+        
+        ## Backend Class Diagram
+        ![Backend Class Diagram](./backend-class-diagram.png)
+        
+        The backend follows a layered architecture with:
+        - **Controllers**: Handle HTTP requests and responses
+        - **Services**: Business logic layer
+        - **Repositories**: Data access layer
+        - **Models**: Entity classes
+        - **DTOs**: Data transfer objects
+        
+        ## Frontend Class Diagram
+        ![Frontend Class Diagram](./frontend-class-diagram.png)
+        
+        The frontend is built with React and includes:
+        - **Pages**: Main application screens
+        - **Components**: Reusable UI components
+        - **Services**: API communication layer
+        - **Types**: TypeScript type definitions
+        
+        ## System Architecture
+        ![System Architecture](./system-architecture.png)
+        
+        The system architecture shows the complete flow from frontend to backend to database.
+        
+        ## Design Patterns Used
+        
+        ### Repository Pattern
+        - Centralizes data access logic
+        - Provides abstraction over data storage
+        - Makes testing easier
+        
+        ### Service Layer Pattern
+        - Encapsulates business logic
+        - Provides separation of concerns
+        - Enables reusability
+        
+        ### MVC Pattern
+        - Controllers handle requests
+        - Models represent data
+        - Views are React components
+        
+        ## Technologies
+        
+        - **Backend**: .NET 8, Entity Framework Core, ASP.NET Core
+        - **Frontend**: React 18, TypeScript, Tailwind CSS
+        - **Database**: Azure SQL Database
+        - **Hosting**: Azure App Service, Azure Static Web Apps
+        
+        EOF
+
+    - name: Commit Class Diagrams
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Add generated files
+        git add docs/diagrams/
+        
+        # Commit if there are changes
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "docs: update class diagrams and system architecture [skip ci]"
+          git push
+        fi
+
+    - name: Upload Class Diagrams
+      uses: actions/upload-artifact@v3
+      with:
+        name: class-diagrams
+        path: |
+          docs/diagrams/*.png
+          docs/diagrams/*.puml
+          docs/diagrams/README.md

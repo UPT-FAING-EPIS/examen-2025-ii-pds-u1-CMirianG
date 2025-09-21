@@ -1,0 +1,132 @@
+name: Infrastructure Diagram Generation
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'infrastructure/**' ]
+  pull_request:
+    branches: [ main ]
+    paths: [ 'infrastructure/**' ]
+  workflow_dispatch:
+
+jobs:
+  generate-diagram:
+    name: Generate Infrastructure Diagram
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install terraform-docs and rover
+      run: |
+        # Install terraform-docs for documentation
+        curl -sSLo terraform-docs https://terraform-docs.io/dl/latest/linux-amd64/terraform-docs
+        chmod +x terraform-docs
+        sudo mv terraform-docs /usr/local/bin/
+        
+        # Install rover for diagram generation
+        curl -sSLo rover https://github.com/im2nguyen/rover/releases/latest/download/rover_linux_amd64.zip
+        unzip rover
+        chmod +x rover
+        sudo mv rover /usr/local/bin/
+
+    - name: Generate Infrastructure Documentation
+      run: |
+        cd infrastructure
+        terraform-docs markdown table --output-file README.md --output-mode inject .
+        terraform-docs json . > terraform-docs.json
+
+    - name: Generate Infrastructure Diagram
+      run: |
+        cd infrastructure
+        
+        # Initialize terraform to get the state
+        terraform init -backend=false
+        
+        # Generate diagram using rover
+        rover -tfPath terraform -name "attendance-system-infrastructure" -output "infrastructure-diagram.png"
+        
+        # Also generate in Mermaid format
+        rover -tfPath terraform -name "attendance-system-infrastructure" -format mermaid -output "infrastructure-diagram.mmd"
+
+    - name: Create Infrastructure Documentation
+      run: |
+        mkdir -p docs/infrastructure
+        
+        # Copy generated files
+        cp infrastructure/infrastructure-diagram.png docs/infrastructure/
+        cp infrastructure/infrastructure-diagram.mmd docs/infrastructure/
+        cp infrastructure/README.md docs/infrastructure/
+        cp infrastructure/terraform-docs.json docs/infrastructure/
+        
+        # Create main infrastructure documentation
+        cat > docs/infrastructure/README.md << 'EOF'
+        # Infrastructure Documentation
+        
+        ## Overview
+        This document describes the infrastructure components for the Attendance System application.
+        
+        ## Architecture Diagram
+        ![Infrastructure Diagram](./infrastructure-diagram.png)
+        
+        ## Components
+        
+        ### Azure Resources
+        - **Resource Group**: Central container for all resources
+        - **App Service Plan**: Hosting plan for the API (Free tier)
+        - **Linux Web App**: Hosts the .NET 8.0 API
+        - **Static Web App**: Hosts the React frontend
+        - **Application Insights**: Application monitoring and telemetry
+        - **Log Analytics Workspace**: Centralized logging
+        - **SQL Server**: Database server
+        - **SQL Database**: Application database (Basic tier)
+        
+        ### Networking
+        - Firewall rules configured for Azure services access
+        - Connection strings managed through App Service configuration
+        
+        ## Deployment
+        Infrastructure is deployed using Terraform with the following commands:
+        
+        ```bash
+        terraform init
+        terraform plan
+        terraform apply
+        ```
+        
+        ## Configuration
+        See `terraform.tfvars.example` for required configuration variables.
+        
+        EOF
+
+    - name: Commit Infrastructure Documentation
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Add generated files
+        git add docs/infrastructure/
+        git add infrastructure/README.md
+        
+        # Commit if there are changes
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "docs: update infrastructure documentation and diagrams [skip ci]"
+          git push
+        fi
+
+    - name: Upload Infrastructure Diagram
+      uses: actions/upload-artifact@v3
+      with:
+        name: infrastructure-diagram
+        path: |
+          docs/infrastructure/infrastructure-diagram.png
+          docs/infrastructure/infrastructure-diagram.mmd
+          docs/infrastructure/README.md

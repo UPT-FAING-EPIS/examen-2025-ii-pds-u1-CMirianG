@@ -1,0 +1,434 @@
+name: Publish Documentation to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'docs/**'
+      - 'backend/**/*.cs'
+      - 'frontend/src/**/*.ts'
+      - 'frontend/src/**/*.tsx'
+      - '*.md'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'backend/**/*.cs'
+      - 'frontend/src/**/*.ts'
+      - 'frontend/src/**/*.tsx'
+      - '*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-documentation:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        cd backend/AttendanceSystem.API
+        dotnet restore
+        cd ../../frontend
+        npm ci
+
+    - name: Generate API Documentation
+      run: |
+        cd backend/AttendanceSystem.API
+        dotnet build --configuration Release --no-restore
+        dotnet publish --configuration Release --no-build --output ./publish
+        
+        # Extract XML documentation
+        cp AttendanceSystem.API.xml ../../
+        cd ../../
+
+    - name: Generate Code Documentation
+      run: |
+        # Install documentation generation tools
+        pip install sphinx sphinx-rtd-theme breathe exhale
+        
+        # Create docs directory structure
+        mkdir -p docs/source docs/build
+        
+        # Create Sphinx configuration
+        cat > docs/source/conf.py << 'EOF'
+        import os
+        import sys
+        sys.path.insert(0, os.path.abspath('../../backend/AttendanceSystem.API'))
+        
+        project = 'Attendance System'
+        copyright = '2025, CMirianG'
+        author = 'CMirianG'
+        
+        extensions = [
+            'sphinx.ext.autodoc',
+            'sphinx.ext.viewcode',
+            'sphinx.ext.napoleon',
+            'breathe',
+            'exhale'
+        ]
+        
+        breathe_projects = {
+            "AttendanceSystem": "../../backend/AttendanceSystem.API/xml"
+        }
+        
+        breathe_default_project = "AttendanceSystem"
+        
+        exhale_args = {
+            "containmentFolder":     "./api",
+            "rootFileName":          "library_root.rst",
+            "rootFileTitle":         "Library API",
+            "doxygenStripFromPath":  "../../backend/AttendanceSystem.API",
+            "createTreeView":        True,
+            "exhaleExecutesDoxygen": False,
+            "exhaleDoxygenStdin":    "INPUT = ../../backend/AttendanceSystem.API"
+        }
+        
+        html_theme = 'sphinx_rtd_theme'
+        html_static_path = ['_static']
+        EOF
+        
+        # Create main documentation
+        cat > docs/source/index.rst << 'EOF'
+        Welcome to Attendance System's documentation!
+        ============================================
+        
+        .. toctree::
+           :maxdepth: 2
+           :caption: Contents:
+        
+           installation
+           usage
+           api/index
+           infrastructure/index
+           diagrams/index
+           development
+        
+        .. _installation:
+        
+        Installation
+        ============
+        
+        Prerequisites
+        -------------
+        
+        - .NET 8.0 SDK
+        - Node.js 18+
+        - Azure CLI (for deployment)
+        - Terraform (for infrastructure)
+        
+        Setup
+        -----
+        
+        Backend Setup
+        ~~~~~~~~~~~~~
+        
+        .. code-block:: bash
+        
+           cd backend/AttendanceSystem.API
+           dotnet restore
+           dotnet build
+           dotnet run
+        
+        Frontend Setup
+        ~~~~~~~~~~~~~~
+        
+        .. code-block:: bash
+        
+           cd frontend
+           npm install
+           npm run dev
+        
+        .. _usage:
+        
+        Usage
+        =====
+        
+        The Attendance System provides a comprehensive solution for managing student attendance in educational institutions.
+        
+        Features
+        --------
+        
+        - Student registration and management
+        - Course and session management
+        - Attendance tracking
+        - Report generation
+        - Real-time dashboard
+        
+        API Endpoints
+        -------------
+        
+        - ``GET /api/attendance`` - Get all attendance records
+        - ``POST /api/attendance`` - Create new attendance record
+        - ``GET /api/courses`` - Get all courses
+        - ``POST /api/courses`` - Create new course
+        - ``GET /api/sessions`` - Get all sessions
+        - ``POST /api/sessions`` - Create new session
+        - ``GET /api/reports/attendance/{courseId}`` - Get attendance report
+        
+        .. _development:
+        
+        Development
+        ===========
+        
+        Architecture
+        ------------
+        
+        The system follows a layered architecture:
+        
+        - **Presentation Layer**: React frontend
+        - **API Layer**: ASP.NET Core Web API
+        - **Business Layer**: Services and repositories
+        - **Data Layer**: Entity Framework Core with Azure SQL
+        
+        Design Patterns
+        ---------------
+        
+        - Repository Pattern
+        - Service Layer Pattern
+        - MVC Pattern
+        - Dependency Injection
+        
+        Testing
+        -------
+        
+        Run backend tests:
+        
+        .. code-block:: bash
+        
+           cd backend
+           dotnet test
+        
+        Run frontend tests:
+        
+        .. code-block:: bash
+        
+           cd frontend
+           npm test
+        
+        EOF
+
+    - name: Create Additional Documentation
+      run: |
+        # Create installation guide
+        cat > docs/source/installation.rst << 'EOF'
+        Installation Guide
+        ==================
+        
+        This guide will help you set up the Attendance System on your local development environment.
+        
+        Prerequisites
+        -------------
+        
+        - .NET 8.0 SDK
+        - Node.js 18+
+        - Azure CLI
+        - Git
+        
+        Backend Installation
+        --------------------
+        
+        1. Clone the repository:
+        
+        .. code-block:: bash
+        
+           git clone https://github.com/your-username/examen-2025-ii-pds-u1-CMirianG.git
+           cd examen-2025-ii-pds-u1-CMirianG
+        
+        2. Navigate to the backend directory:
+        
+        .. code-block:: bash
+        
+           cd backend/AttendanceSystem.API
+        
+        3. Restore dependencies:
+        
+        .. code-block:: bash
+        
+           dotnet restore
+        
+        4. Build the project:
+        
+        .. code-block:: bash
+        
+           dotnet build
+        
+        5. Run the application:
+        
+        .. code-block:: bash
+        
+           dotnet run
+        
+        Frontend Installation
+        ---------------------
+        
+        1. Navigate to the frontend directory:
+        
+        .. code-block:: bash
+        
+           cd frontend
+        
+        2. Install dependencies:
+        
+        .. code-block:: bash
+        
+           npm install
+        
+        3. Start the development server:
+        
+        .. code-block:: bash
+        
+           npm run dev
+        
+        Database Setup
+        --------------
+        
+        The application uses Entity Framework Core with InMemory database for development.
+        The database is automatically created when the application starts.
+        
+        Configuration
+        -------------
+        
+        Update the connection string in ``appsettings.json`` for production:
+        
+        .. code-block:: json
+        
+           {
+             "ConnectionStrings": {
+               "DefaultConnection": "Your connection string here"
+             }
+           }
+        
+        EOF
+
+    - name: Build Sphinx Documentation
+      run: |
+        cd docs
+        sphinx-build -b html source build/html
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './docs/build/html'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-documentation
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+    - name: Update Documentation Index
+      run: |
+        # Create a comprehensive index page
+        cat > docs/build/html/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Attendance System Documentation</title>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                .links { display: flex; flex-wrap: wrap; gap: 20px; }
+                .link-card { flex: 1; min-width: 200px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; text-decoration: none; color: #333; }
+                .link-card:hover { background-color: #f5f5f5; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Attendance System Documentation</h1>
+                <p>Comprehensive documentation for the Attendance System project</p>
+            </div>
+            
+            <div class="section">
+                <h2>Quick Links</h2>
+                <div class="links">
+                    <a href="installation.html" class="link-card">
+                        <h3>Installation Guide</h3>
+                        <p>Step-by-step setup instructions</p>
+                    </a>
+                    <a href="usage.html" class="link-card">
+                        <h3>Usage Guide</h3>
+                        <p>How to use the application</p>
+                    </a>
+                    <a href="api/index.html" class="link-card">
+                        <h3>API Documentation</h3>
+                        <p>Complete API reference</p>
+                    </a>
+                    <a href="infrastructure/index.html" class="link-card">
+                        <h3>Infrastructure</h3>
+                        <p>Infrastructure documentation and diagrams</p>
+                    </a>
+                    <a href="diagrams/index.html" class="link-card">
+                        <h3>System Diagrams</h3>
+                        <p>Class diagrams and architecture</p>
+                    </a>
+                    <a href="development.html" class="link-card">
+                        <h3>Development</h3>
+                        <p>Development guidelines and patterns</p>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>Project Overview</h2>
+                <p>The Attendance System is a comprehensive web application built with .NET 8 and React, designed to manage student attendance in educational institutions.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li>Student registration and management</li>
+                    <li>Course and session management</li>
+                    <li>Real-time attendance tracking</li>
+                    <li>Comprehensive reporting system</li>
+                    <li>Responsive web interface</li>
+                    <li>RESTful API</li>
+                </ul>
+                
+                <h3>Technologies Used</h3>
+                <ul>
+                    <li><strong>Backend:</strong> .NET 8, ASP.NET Core, Entity Framework Core</li>
+                    <li><strong>Frontend:</strong> React 18, TypeScript, Tailwind CSS</li>
+                    <li><strong>Database:</strong> Azure SQL Database</li>
+                    <li><strong>Infrastructure:</strong> Azure App Service, Terraform</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        EOF
