@@ -37,7 +37,7 @@ jobs:
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'GPSAlumniBT'
+        app-name: 'asistenciaestudiantil'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_API }}
         package: './backend/AttendanceSystem.API/publish'
 
@@ -45,4 +45,4 @@ jobs:
       run: |
         sleep 30
         echo "Testing deployment..."
-        curl -f https://gpsalumnibt-cyadgxdbegbgb8f6.canadacentral-01.azurewebsites.net || echo "App is starting up..."
+        curl -f http://asistenciaestudiantil-gefwbed2f7h8csd8.canadacentral-01.azurewebsites.net || echo "App is starting up..."
