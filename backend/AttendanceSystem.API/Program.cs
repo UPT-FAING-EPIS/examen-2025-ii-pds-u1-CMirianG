@@ -14,9 +14,35 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext - Use SQLite for simplicity (works in Azure too)
+// Add DbContext - Support multiple databases
 builder.Services.AddDbContext<AttendanceContext>(options =>
-    options.UseSqlite("Data Source=attendance.db"));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        if (connectionString.Contains("postgresql://") || connectionString.Contains("postgres://"))
+        {
+            // Use PostgreSQL for production (Supabase)
+            options.UseNpgsql(connectionString);
+        }
+        else if (connectionString.Contains("tcp:") || connectionString.Contains("database.windows.net"))
+        {
+            // Use SQL Server for Azure SQL
+            options.UseSqlServer(connectionString);
+        }
+        else
+        {
+            // Use SQLite for local development
+            options.UseSqlite(connectionString);
+        }
+    }
+    else
+    {
+        // Default to SQLite
+        options.UseSqlite("Data Source=attendance.db");
+    }
+});
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
