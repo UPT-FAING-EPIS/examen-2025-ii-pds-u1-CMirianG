@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: attendance-system-upt-api
+  AZURE_WEBAPP_NAME: GPSAlumniBT
   AZURE_WEBAPP_PACKAGE_PATH: './backend/AttendanceSystem.API/publish'
   DOTNET_VERSION: '8.0.x'
   NODE_VERSION: '18'
