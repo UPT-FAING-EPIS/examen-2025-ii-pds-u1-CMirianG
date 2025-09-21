@@ -3,6 +3,7 @@ using AttendanceSystem.API.Data;
 using AttendanceSystem.API.Interfaces;
 using AttendanceSystem.API.Repositories;
 using AttendanceSystem.API.Services;
+using AttendanceSystem.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,33 +68,32 @@ using (var scope = app.Services.CreateScope())
     {
         // Add sample sessions for today
         var today = DateTime.Today;
-        var sessions = new[]
+        var session1 = new Session
         {
-            new Session
-            {
-                Id = 1,
-                CourseId = 1,
-                Title = "Introducción a la Programación Web",
-                Date = today,
-                StartTime = TimeSpan.FromHours(10),
-                EndTime = TimeSpan.FromHours(12),
-                UniqueCode = "123456",
-                IsActive = true
-            },
-            new Session
-            {
-                Id = 2,
-                CourseId = 2,
-                Title = "Fundamentos de Base de Datos",
-                Date = today,
-                StartTime = TimeSpan.FromHours(14),
-                EndTime = TimeSpan.FromHours(16),
-                UniqueCode = "789012",
-                IsActive = true
-            }
+            Id = 1,
+            CourseId = 1,
+            Title = "Introducción a la Programación Web",
+            Date = today,
+            StartTime = TimeSpan.FromHours(10),
+            EndTime = TimeSpan.FromHours(12),
+            UniqueCode = "123456",
+            IsActive = true
         };
         
-        context.Sessions.AddRange(sessions);
+        var session2 = new Session
+        {
+            Id = 2,
+            CourseId = 2,
+            Title = "Fundamentos de Base de Datos",
+            Date = today,
+            StartTime = TimeSpan.FromHours(14),
+            EndTime = TimeSpan.FromHours(16),
+            UniqueCode = "789012",
+            IsActive = true
+        };
+        
+        context.Sessions.Add(session1);
+        context.Sessions.Add(session2);
         context.SaveChanges();
     }
 }
