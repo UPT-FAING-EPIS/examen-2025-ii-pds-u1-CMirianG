@@ -57,7 +57,7 @@ export default function StudentPortal() {
       const dto: RegisterAttendanceDto = {
         studentId: selectedStudent,
         sessionCode: sessionCode.trim(),
-        notes: notes.trim() || undefined,
+        notes: notes.trim() || '',
       };
 
       await attendanceApi.register(dto);

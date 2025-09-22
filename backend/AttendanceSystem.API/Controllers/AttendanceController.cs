@@ -64,5 +64,86 @@ namespace AttendanceSystem.API.Controllers
         {
             return await _context.Students.ToListAsync();
         }
+
+        // PUT: api/attendance/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateAttendance(int id, AttendanceDto attendanceDto)
+        {
+            if (id != attendanceDto.Id)
+            {
+                return BadRequest("ID mismatch");
+            }
+
+            var attendance = await _context.Attendances.FindAsync(id);
+            if (attendance == null)
+            {
+                return NotFound();
+            }
+
+            attendance.IsPresent = attendanceDto.IsPresent;
+            attendance.Notes = attendanceDto.Notes;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!AttendanceExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        // DELETE: api/attendance/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAttendance(int id)
+        {
+            var attendance = await _context.Attendances.FindAsync(id);
+            if (attendance == null)
+            {
+                return NotFound();
+            }
+
+            _context.Attendances.Remove(attendance);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // GET: api/attendance/reports
+        [HttpGet("reports")]
+        public async Task<ActionResult<IEnumerable<AttendanceReportDto>>> GetAttendanceReports([FromQuery] int? courseId)
+        {
+            var reports = await _attendanceService.GetAttendanceReportsAsync(courseId);
+            return Ok(reports);
+        }
+
+        // GET: api/attendance/alerts
+        [HttpGet("alerts")]
+        public async Task<ActionResult<IEnumerable<object>>> GetAttendanceAlerts([FromQuery] double threshold = 70.0)
+        {
+            var alerts = await _attendanceService.GetAttendanceAlertsAsync(threshold);
+            return Ok(alerts);
+        }
+
+        // GET: api/attendance/student/{studentId}/history
+        [HttpGet("student/{studentId}/history")]
+        public async Task<ActionResult<IEnumerable<AttendanceDto>>> GetStudentAttendanceHistory(int studentId)
+        {
+            var history = await _attendanceService.GetStudentAttendanceHistoryAsync(studentId);
+            return Ok(history);
+        }
+
+        private bool AttendanceExists(int id)
+        {
+            return _context.Attendances.Any(e => e.Id == id);
+        }
     }
 }

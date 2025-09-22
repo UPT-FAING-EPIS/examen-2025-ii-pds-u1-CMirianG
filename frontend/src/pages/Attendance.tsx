@@ -18,7 +18,7 @@ export default function Attendance() {
     try {
       setLoading(true);
       const [attendancesRes, coursesRes] = await Promise.all([
-        attendanceApi.getAll({ courseId: selectedCourse || undefined }),
+        attendanceApi.getAll(selectedCourse ? { courseId: selectedCourse } : {}),
         coursesApi.getAll(),
       ]);
       
