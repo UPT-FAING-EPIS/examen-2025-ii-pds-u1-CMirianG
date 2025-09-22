@@ -76,7 +76,7 @@ jobs:
         npm run test -- --coverage --watchAll=false || echo "No frontend tests configured"
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-build-${{ github.ref_name }}
         path: |

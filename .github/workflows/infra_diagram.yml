@@ -172,7 +172,7 @@ jobs:
         fi
 
     - name: Upload Infrastructure Diagram
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: infrastructure-diagram
         path: |

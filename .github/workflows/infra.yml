@@ -96,7 +96,7 @@ jobs:
           });
 
     - name: Upload Plan
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: terraform-plan-${{ github.event.number }}
         path: ./infrastructure/tfplan
@@ -171,7 +171,7 @@ jobs:
         echo "4. Test the complete system" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload Infrastructure State
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: terraform-state-${{ github.sha }}
         path: ./infrastructure/.terraform/
