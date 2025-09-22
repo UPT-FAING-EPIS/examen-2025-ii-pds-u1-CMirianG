@@ -1,283 +1,337 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { attendanceApi } from '../services/api';
-import { RegisterAttendanceDto, Student, AttendanceDto } from '../types';
+import { CheckCircle, Clock, AlertCircle, BookOpen, Calendar, User, Search } from 'lucide-react';
+
+interface Student {
+  id: number;
+  firstName: string;
+  lastName: string;
+  studentCode: string;
+  email: string;
+}
+
+interface Session {
+  id: number;
+  title: string;
+  uniqueCode: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  isToday: boolean;
+  isActive: boolean;
+  attendanceStatus?: {
+    isPresent: boolean;
+    registeredAt: string;
+    notes?: string;
+  };
+}
+
+interface Course {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  instructorName: string;
+  sessions: Session[];
+}
+
+interface StudentCoursesData {
+  student: Student;
+  courses: Course[];
+}
 
 export default function StudentPortal() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
-  const [sessionCode, setSessionCode] = useState('');
-  const [notes, setNotes] = useState('');
+  const [studentData, setStudentData] = useState<StudentCoursesData | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [attendanceHistory, setAttendanceHistory] = useState<AttendanceDto[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const response = await attendanceApi.getStudents();
-        setStudents(response.data);
-      } catch (error) {
-        console.error('Error fetching students:', error);
-      }
-    };
-
     fetchStudents();
   }, []);
 
   useEffect(() => {
     if (selectedStudent) {
-      fetchAttendanceHistory();
+      fetchStudentCourses();
     }
   }, [selectedStudent]);
 
-  const fetchAttendanceHistory = async () => {
-    if (!selectedStudent) return;
-    
+  const fetchStudents = async () => {
     try {
-      const response = await attendanceApi.getAll({ studentId: selectedStudent });
-      setAttendanceHistory(response.data);
+      const response = await fetch('/api/students');
+      if (response.ok) {
+        const students = await response.json();
+        setStudents(students);
+      }
     } catch (error) {
-      console.error('Error fetching attendance history:', error);
+      console.error('Error fetching students:', error);
+      setMessage({ type: 'error', text: 'Error al cargar estudiantes' });
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedStudent || !sessionCode.trim()) {
-      setMessage({ type: 'error', text: 'Por favor selecciona un estudiante e ingresa el código de sesión' });
-      return;
-    }
-
-    setLoading(true);
-    setMessage(null);
+  const fetchStudentCourses = async () => {
+    if (!selectedStudent) return;
 
     try {
-      const dto: RegisterAttendanceDto = {
-        studentId: selectedStudent,
-        sessionCode: sessionCode.trim(),
-        notes: notes.trim() || '',
-      };
-
-      await attendanceApi.register(dto);
-      setMessage({ type: 'success', text: '¡Asistencia registrada exitosamente!' });
-      setSessionCode('');
-      setNotes('');
-      fetchAttendanceHistory();
-    } catch (error: any) {
-      const errorMessage = error.response?.data || 'Error al registrar la asistencia';
-      setMessage({ type: 'error', text: errorMessage });
+      setLoading(true);
+      const response = await fetch(`/api/students/${selectedStudent}/courses-with-sessions`);
+      if (response.ok) {
+        const data = await response.json();
+        setStudentData(data);
+      } else {
+        setMessage({ type: 'error', text: 'Error al cargar cursos del estudiante' });
+      }
+    } catch (error) {
+      console.error('Error fetching student courses:', error);
+      setMessage({ type: 'error', text: 'Error de conexión' });
     } finally {
       setLoading(false);
     }
   };
 
-  const getAttendanceStats = () => {
-    if (!attendanceHistory.length) return null;
+  const filteredStudents = students.filter(student =>
+    student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.studentCode.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    const totalSessions = attendanceHistory.length;
-    const attendedSessions = attendanceHistory.filter(a => a.isPresent).length;
-    const attendanceRate = (attendedSessions / totalSessions) * 100;
-
-    return {
-      totalSessions,
-      attendedSessions,
-      attendanceRate: Math.round(attendanceRate * 100) / 100,
-    };
+  const getAttendanceStatusIcon = (session: Session) => {
+    if (session.attendanceStatus) {
+      return session.attendanceStatus.isPresent ? (
+        <CheckCircle className="h-5 w-5 text-green-600" />
+      ) : (
+        <AlertCircle className="h-5 w-5 text-red-600" />
+      );
+    }
+    return <Clock className="h-5 w-5 text-gray-400" />;
   };
 
-  const stats = getAttendanceStats();
+  const getAttendanceStatusText = (session: Session) => {
+    if (session.attendanceStatus) {
+      return session.attendanceStatus.isPresent ? 'Presente' : 'Ausente';
+    }
+    return 'Sin registrar';
+  };
+
+  const getAttendanceStatusColor = (session: Session) => {
+    if (session.attendanceStatus) {
+      return session.attendanceStatus.isPresent ? 'text-green-600' : 'text-red-600';
+    }
+    return 'text-gray-500';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    const time = new Date(`2000-01-01T${timeString}`);
+    return time.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const isSessionActive = (session: Session) => {
+    if (!session.isToday) return false;
+    
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const startTime = new Date(`2000-01-01T${session.startTime}`).getHours() * 60 + 
+                     new Date(`2000-01-01T${session.startTime}`).getMinutes();
+    const endTime = new Date(`2000-01-01T${session.endTime}`).getHours() * 60 + 
+                   new Date(`2000-01-01T${session.endTime}`).getMinutes();
+    
+    return currentTime >= startTime && currentTime <= endTime;
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Portal del Estudiante
-          </h2>
-          <p className="text-gray-600">
-            Registra tu asistencia usando el código proporcionado por tu instructor.
-          </p>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <User className="h-8 w-8 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Portal del Estudiante</h1>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Attendance Registration Form */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Registrar Asistencia
-            </h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="student" className="block text-sm font-medium text-gray-700">
-                  Estudiante
-                </label>
-                <select
-                  id="student"
-                  value={selectedStudent || ''}
-                  onChange={(e) => setSelectedStudent(e.target.value ? parseInt(e.target.value) : null)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Selecciona un estudiante</option>
-                  {students.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.firstName} {student.lastName} ({student.studentCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="sessionCode" className="block text-sm font-medium text-gray-700">
-                  Código de Sesión
-                </label>
-                <input
-                  type="text"
-                  id="sessionCode"
-                  value={sessionCode}
-                  onChange={(e) => setSessionCode(e.target.value)}
-                  placeholder="Ingresa el código de 6 dígitos"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                  Notas (Opcional)
-                </label>
-                <textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Comentarios adicionales..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Registrando...
-                  </div>
-                ) : (
-                  'Registrar Asistencia'
-                )}
-              </button>
-            </form>
-
-            {message && (
-              <div className={`mt-4 p-4 rounded-md ${
-                message.type === 'success' 
-                  ? 'bg-green-50 border border-green-200 text-green-700' 
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}>
-                <div className="flex items-center">
-                  {message.type === 'success' ? (
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 mr-2" />
-                  )}
-                  {message.text}
-                </div>
-              </div>
-            )}
+        {/* Buscador de estudiantes */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar estudiante por nombre o código..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
         </div>
 
-        {/* Student Stats and History */}
-        {selectedStudent && (
-          <div className="space-y-6">
-            {/* Stats Card */}
-            {stats && (
-              <div className="bg-white shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Estadísticas de Asistencia
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {stats.attendedSessions}
-                      </div>
-                      <div className="text-sm text-gray-500">Asistidas</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-600">
-                        {stats.totalSessions}
-                      </div>
-                      <div className="text-sm text-gray-500">Total</div>
-                    </div>
-                    <div className="text-center">
-                      <div className={`text-2xl font-bold ${
-                        stats.attendanceRate >= 70 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {stats.attendanceRate}%
-                      </div>
-                      <div className="text-sm text-gray-500">Porcentaje</div>
-                    </div>
+        {/* Lista de estudiantes */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Seleccionar Estudiante</h2>
+          <div className="grid gap-2 max-h-48 overflow-y-auto">
+            {filteredStudents.map((student) => (
+              <div
+                key={student.id}
+                className={`p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                  selectedStudent === student.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+                onClick={() => setSelectedStudent(student.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {student.firstName} {student.lastName}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Código: {student.studentCode} | Email: {student.email}
+                    </p>
                   </div>
+                  {selectedStudent === student.id && (
+                    <CheckCircle className="h-5 w-5 text-blue-600" />
+                  )}
                 </div>
               </div>
-            )}
+            ))}
+          </div>
+        </div>
 
-            {/* Attendance History */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-4 py-5 sm:p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Historial de Asistencia
-                </h3>
-                {attendanceHistory.length === 0 ? (
-                  <p className="text-gray-500">No hay registros de asistencia.</p>
-                ) : (
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {attendanceHistory
-                      .sort((a, b) => new Date(b.registeredAt).getTime() - new Date(a.registeredAt).getTime())
-                      .map((attendance) => (
-                        <div
-                          key={attendance.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                        >
-                          <div className="flex items-center">
-                            {attendance.isPresent ? (
-                              <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                            ) : (
-                              <Clock className="h-5 w-5 text-red-500 mr-3" />
-                            )}
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {attendance.courseName}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                {attendance.sessionTitle}
-                              </p>
+        {/* Información del estudiante seleccionado */}
+        {selectedStudent && studentData && (
+          <div className="space-y-6">
+            {/* Información del estudiante */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                {studentData.student.firstName} {studentData.student.lastName}
+              </h3>
+              <p className="text-blue-700">
+                <strong>Código:</strong> {studentData.student.studentCode} | 
+                <strong> Email:</strong> {studentData.student.email}
+              </p>
+            </div>
+
+            {/* Cursos y sesiones */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Cursos y Sesiones</h3>
+              
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Cargando cursos...</p>
+                </div>
+              ) : studentData.courses.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay cursos activos para este estudiante</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {studentData.courses.map((course) => (
+                    <div key={course.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            {course.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {course.code} | Profesor: {course.instructorName}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">{course.description}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm text-gray-500">
+                            {course.sessions.length} sesión{course.sessions.length !== 1 ? 'es' : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Sesiones del curso */}
+                      <div className="space-y-2">
+                        {course.sessions.map((session) => (
+                          <div
+                            key={session.id}
+                            className={`p-3 rounded-lg border ${
+                              session.isToday
+                                ? 'border-blue-300 bg-blue-50'
+                                : 'border-gray-200 bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Calendar className="h-4 w-4 text-gray-600" />
+                                  <span className="font-medium text-gray-900">{session.title}</span>
+                                  {session.isToday && (
+                                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                      HOY
+                                    </span>
+                                  )}
+                                  {isSessionActive(session) && (
+                                    <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                                      ACTIVA
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                                  <div>
+                                    <strong>Fecha:</strong> {formatDate(session.date)}
+                                  </div>
+                                  <div>
+                                    <strong>Horario:</strong> {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                                  </div>
+                                  <div>
+                                    <strong>Código:</strong> 
+                                    <span className="font-mono bg-gray-100 px-2 py-1 rounded ml-1">
+                                      {session.uniqueCode}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="ml-4 text-right">
+                                <div className="flex items-center gap-2 mb-1">
+                                  {getAttendanceStatusIcon(session)}
+                                  <span className={`text-sm font-medium ${getAttendanceStatusColor(session)}`}>
+                                    {getAttendanceStatusText(session)}
+                                  </span>
+                                </div>
+                                {session.attendanceStatus && (
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(session.attendanceStatus.registeredAt).toLocaleString('es-ES')}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm text-gray-900">
-                              {new Date(attendance.registeredAt).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(attendance.registeredAt).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* Mensaje de resultado */}
+        {message && (
+          <div className={`mt-4 p-4 rounded-lg ${
+            message.type === 'success' 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : 'bg-red-100 text-red-800 border border-red-200'
+          }`}>
+            {message.text}
           </div>
         )}
       </div>

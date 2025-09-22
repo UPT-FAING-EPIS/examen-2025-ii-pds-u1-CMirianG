@@ -37,6 +37,84 @@ namespace AttendanceSystem.API.Controllers
             return student;
         }
 
+        // GET: api/students/{id}/courses-with-sessions
+        [HttpGet("{id}/courses-with-sessions")]
+        public async Task<ActionResult<object>> GetStudentCoursesWithSessions(int id)
+        {
+            var student = await _context.Students.FindAsync(id);
+            if (student == null)
+            {
+                return NotFound(new { message = "Estudiante no encontrado" });
+            }
+
+            var today = DateTime.Today;
+            var coursesWithSessions = await _context.Courses
+                .Where(c => c.IsActive)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Name,
+                    c.Code,
+                    c.Description,
+                    c.InstructorName,
+                    Sessions = _context.Sessions
+                        .Where(s => s.CourseId == c.Id && s.IsActive && s.Date >= today)
+                        .OrderBy(s => s.Date)
+                        .ThenBy(s => s.StartTime)
+                        .Select(s => new
+                        {
+                            s.Id,
+                            s.Title,
+                            s.UniqueCode,
+                            s.Date,
+                            s.StartTime,
+                            s.EndTime,
+                            IsToday = s.Date.Date == today,
+                            IsActive = s.IsActive,
+                            AttendanceStatus = _context.Attendances
+                                .Where(a => a.StudentId == id && a.SessionId == s.Id)
+                                .Select(a => new
+                                {
+                                    a.IsPresent,
+                                    a.RegisteredAt,
+                                    a.Notes
+                                })
+                                .FirstOrDefault()
+                        })
+                        .ToList()
+                })
+                .Where(c => c.Sessions.Any())
+                .ToListAsync();
+
+            return Ok(new
+            {
+                student = new
+                {
+                    student.Id,
+                    student.FirstName,
+                    student.LastName,
+                    student.StudentCode,
+                    student.Email
+                },
+                courses = coursesWithSessions
+            });
+        }
+
+        // GET: api/students/by-code/{code}
+        [HttpGet("by-code/{code}")]
+        public async Task<ActionResult<Student>> GetStudentByCode(string code)
+        {
+            var student = await _context.Students
+                .FirstOrDefaultAsync(s => s.StudentCode == code);
+            
+            if (student == null)
+            {
+                return NotFound(new { message = $"Estudiante con código {code} no encontrado" });
+            }
+
+            return Ok(student);
+        }
+
         // POST: api/students
         [HttpPost]
         public async Task<ActionResult<Student>> PostStudent(Student student)
