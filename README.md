@@ -2,9 +2,16 @@
 
 Una plataforma web moderna y completa para registrar, monitorear y reportar la asistencia de estudiantes a cursos presenciales o virtuales. Desarrollado con las mejores prácticas de ingeniería de software y DevOps.
 
+## 🚀 Demo en Vivo
+
+**[👉 Prueba la aplicación aquí](https://effulgent-jalebi-963acc.netlify.app/)**
+
+La aplicación está disponible en vivo en Netlify con todas las funcionalidades implementadas. Puedes explorar el sistema de asistencia estudiantil directamente desde tu navegador.
+
 [![Build Status](https://github.com/CMirianG/examen-2025-ii-pds-u1-CMirianG/actions/workflows/deploy_app.yml/badge.svg)](https://github.com/CMirianG/examen-2025-ii-pds-u1-CMirianG/actions)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=examen-2025-ii-pds-u1-CMirianG&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=examen-2025-ii-pds-u1-CMirianG)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=examen-2025-ii-pds-u1-CMirianG&metric=coverage)](https://sonarcloud.io/summary/new_code?id=examen-2025-ii-pds-u1-CMirianG)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Netlify-green)](https://effulgent-jalebi-963acc.netlify.app/)
 [![Azure](https://img.shields.io/badge/Azure-UPT_Student-blue)](https://attendance-system-upt-api.azurewebsites.net)
 
 ## ✨ Criterios de Evaluación Cumplidos
@@ -91,9 +98,13 @@ npm run dev
 ```
 
 ### 🌐 URLs en Producción
-- **Frontend**: [https://attendance-system-upt-frontend.azurestaticapps.net](https://attendance-system-upt-frontend.azurestaticapps.net)
-- **Frontend (Netlify)**: [https://effulgent-jalebi-963acc.netlify.app/](https://effulgent-jalebi-963acc.netlify.app/)
-- **API**: [https://attendance-system-upt-api.azurewebsites.net](https://attendance-system-upt-api.azurewebsites.net)
+
+#### 🎯 **Aplicación Principal**
+- **🌟 Frontend (Netlify)**: [https://effulgent-jalebi-963acc.netlify.app/](https://effulgent-jalebi-963acc.netlify.app/) - **Recomendado**
+
+#### 🔧 **URLs Alternativas**
+- **Frontend (Azure)**: [https://attendance-system-upt-frontend.azurestaticapps.net](https://attendance-system-upt-frontend.azurestaticapps.net)
+- **API Backend**: [https://attendance-system-upt-api.azurewebsites.net](https://attendance-system-upt-api.azurewebsites.net)
 - **API Docs**: [https://attendance-system-upt-api.azurewebsites.net/swagger](https://attendance-system-upt-api.azurewebsites.net/swagger)
 - **Documentación**: [https://CMirianG.github.io/examen-2025-ii-pds-u1-CMirianG](https://CMirianG.github.io/examen-2025-ii-pds-u1-CMirianG)
 
@@ -244,9 +255,20 @@ Si tienes problemas o preguntas:
 
 Tu sistema de asistencia estudiantil está configurado y listo para usar. El sistema incluye datos de prueba para que puedas comenzar a explorar inmediatamente.
 
-**Datos de prueba incluidos**:
+### 🚀 **Acceso Rápido**
+- **[👉 Demo en Vivo](https://effulgent-jalebi-963acc.netlify.app/)** - Prueba todas las funcionalidades
+- **[📚 Documentación API](https://attendance-system-upt-api.azurewebsites.net/swagger)** - Explora los endpoints
+
+### 📋 **Datos de Prueba Incluidos**:
 - 3 estudiantes de ejemplo
 - 2 cursos de ejemplo
-- Interfaz completamente funcional
+- Interfaz completamente funcional con el nuevo Portal del Estudiante mejorado
+
+### ✨ **Características Destacadas del Portal del Estudiante**:
+- 🎯 **Dashboard Intuitivo**: Vista general con estadísticas en tiempo real
+- 📊 **Análisis de Asistencia**: Gráficos y tendencias de rendimiento
+- 🔐 **Registro Rápido**: Modal elegante para registrar asistencia
+- 🔔 **Notificaciones**: Sistema de feedback inmediato
+- 📱 **Diseño Responsive**: Optimizado para todos los dispositivos
 
 ¡Disfruta gestionando la asistencia de manera moderna y eficiente!
