@@ -15,9 +15,9 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext - Use In-Memory Database (no external dependencies)
+// Add DbContext - Use Azure SQL Database
 builder.Services.AddDbContext<AttendanceContext>(options =>
-    options.UseInMemoryDatabase("AttendanceDB"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
