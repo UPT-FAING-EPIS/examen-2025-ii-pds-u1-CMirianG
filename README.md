@@ -92,6 +92,7 @@ npm run dev
 
 ### 🌐 URLs en Producción
 - **Frontend**: [https://attendance-system-upt-frontend.azurestaticapps.net](https://attendance-system-upt-frontend.azurestaticapps.net)
+- **Frontend (Netlify)**: [https://effulgent-jalebi-963acc.netlify.app/](https://effulgent-jalebi-963acc.netlify.app/)
 - **API**: [https://attendance-system-upt-api.azurewebsites.net](https://attendance-system-upt-api.azurewebsites.net)
 - **API Docs**: [https://attendance-system-upt-api.azurewebsites.net/swagger](https://attendance-system-upt-api.azurewebsites.net/swagger)
 - **Documentación**: [https://CMirianG.github.io/examen-2025-ii-pds-u1-CMirianG](https://CMirianG.github.io/examen-2025-ii-pds-u1-CMirianG)
