@@ -20,9 +20,21 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new() { Title = "Attendance System API", Version = "v1" });
 });
 
-// Add DbContext - Use In-Memory Database for local development
-builder.Services.AddDbContext<AttendanceContext>(options =>
-    options.UseInMemoryDatabase("AttendanceSystemDb"));
+// Add DbContext - Use SQL Server for production, In-Memory for development
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (builder.Environment.IsDevelopment())
+{
+    // Use In-Memory Database for local development
+    builder.Services.AddDbContext<AttendanceContext>(options =>
+        options.UseInMemoryDatabase("AttendanceSystemDb"));
+}
+else
+{
+    // Use SQL Server for production
+    builder.Services.AddDbContext<AttendanceContext>(options =>
+        options.UseSqlServer(connectionString));
+}
 
 // Add Repository Pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
@@ -36,9 +48,20 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:5173", "http://localhost:4000")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+            if (builder.Environment.IsDevelopment())
+            {
+                // Local development origins
+                policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:5173", "http://localhost:4000")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
+            else
+            {
+                // Production origins
+                policy.WithOrigins("https://attendance-system-frontend.azurestaticapps.net", "https://assistenciaestudiantil-gefwbed2f7h8csd8.canadacentral-01.azurewebsites.net")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
         });
 });
 
