@@ -22,6 +22,14 @@ namespace AttendanceSystem.API.DTOs
         public string? Notes { get; set; }
     }
 
+    public class QuickRegisterDto
+    {
+        public string StudentCode { get; set; } = string.Empty;
+        public string SessionCode { get; set; } = string.Empty;
+        public bool IsPresent { get; set; } = true;
+        public string? Notes { get; set; }
+    }
+
     public class AttendanceReportDto
     {
         public int CourseId { get; set; }

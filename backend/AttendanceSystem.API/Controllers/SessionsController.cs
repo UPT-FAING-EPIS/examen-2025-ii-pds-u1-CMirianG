@@ -32,6 +32,34 @@ namespace AttendanceSystem.API.Controllers
             return await query.ToListAsync();
         }
 
+        // GET: api/sessions/today
+        [HttpGet("today")]
+        public async Task<ActionResult<IEnumerable<object>>> GetTodaySessions()
+        {
+            var today = DateTime.Today;
+            var sessions = await _context.Sessions
+                .Include(s => s.Course)
+                .Where(s => s.IsActive && s.Date.Date == today)
+                .OrderBy(s => s.StartTime)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Title,
+                    s.UniqueCode,
+                    s.StartTime,
+                    s.EndTime,
+                    Course = new
+                    {
+                        s.Course.Id,
+                        s.Course.Name,
+                        s.Course.Code
+                    }
+                })
+                .ToListAsync();
+
+            return Ok(sessions);
+        }
+
         // GET: api/sessions/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Session>> GetSession(int id)

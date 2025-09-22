@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import QuickAttendance from './pages/QuickAttendance';
 import Courses from './pages/Courses';
 import Sessions from './pages/Sessions';
 import Attendance from './pages/Attendance';
@@ -12,6 +13,7 @@ function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/quick-attendance" element={<QuickAttendance />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/sessions" element={<Sessions />} />
         <Route path="/attendance" element={<Attendance />} />

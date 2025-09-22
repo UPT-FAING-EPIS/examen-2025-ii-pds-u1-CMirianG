@@ -8,7 +8,7 @@ import {
   AttendanceReportDto 
 } from '../types';
 
-const API_BASE_URL = 'http://asistenciaestudiantil-gefwbed2f7h8csd8.canadacentral-01.azurewebsites.net/api';
+const API_BASE_URL = 'https://asistenciaestudiantil-gefwbed2f7h8csd8.canadacentral-01.azurewebsites.net/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

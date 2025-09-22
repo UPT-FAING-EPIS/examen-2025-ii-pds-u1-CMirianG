@@ -8,11 +8,13 @@ import {
   User, 
   Menu, 
   X,
-  GraduationCap
+  GraduationCap,
+  CheckCircle
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
+  { name: 'Registro Rápido', href: '/quick-attendance', icon: CheckCircle },
   { name: 'Cursos', href: '/courses', icon: BookOpen },
   { name: 'Sesiones', href: '/sessions', icon: Calendar },
   { name: 'Asistencia', href: '/attendance', icon: Users },

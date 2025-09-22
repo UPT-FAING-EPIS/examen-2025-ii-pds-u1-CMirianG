@@ -39,6 +39,75 @@ namespace AttendanceSystem.API.Controllers
             }
         }
 
+        // POST: api/attendance/quick-register
+        [HttpPost("quick-register")]
+        public async Task<ActionResult<object>> QuickRegisterAttendance([FromBody] QuickRegisterDto dto)
+        {
+            try
+            {
+                // Buscar estudiante por código
+                var student = await _context.Students
+                    .FirstOrDefaultAsync(s => s.StudentCode == dto.StudentCode);
+                
+                if (student == null)
+                {
+                    return NotFound(new { message = $"Estudiante con código {dto.StudentCode} no encontrado" });
+                }
+
+                // Buscar sesión por código
+                var session = await _context.Sessions
+                    .Include(s => s.Course)
+                    .FirstOrDefaultAsync(s => s.UniqueCode == dto.SessionCode);
+                
+                if (session == null)
+                {
+                    return NotFound(new { message = $"Sesión con código {dto.SessionCode} no encontrada" });
+                }
+
+                // Verificar si ya existe una asistencia para este estudiante y sesión
+                var existingAttendance = await _context.Attendances
+                    .FirstOrDefaultAsync(a => a.StudentId == student.Id && a.SessionId == session.Id);
+                
+                if (existingAttendance != null)
+                {
+                    return BadRequest(new { message = "Ya existe una asistencia registrada para este estudiante en esta sesión" });
+                }
+
+                // Crear nueva asistencia
+                var attendance = new Attendance
+                {
+                    StudentId = student.Id,
+                    SessionId = session.Id,
+                    IsPresent = dto.IsPresent,
+                    RegisteredAt = DateTime.UtcNow,
+                    Notes = dto.Notes ?? ""
+                };
+
+                _context.Attendances.Add(attendance);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Asistencia registrada exitosamente",
+                    attendance = new
+                    {
+                        id = attendance.Id,
+                        studentName = $"{student.FirstName} {student.LastName}",
+                        studentCode = student.StudentCode,
+                        courseName = session.Course.Name,
+                        sessionTitle = session.Title,
+                        isPresent = attendance.IsPresent,
+                        registeredAt = attendance.RegisteredAt,
+                        notes = attendance.Notes
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         // GET: api/attendance/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<AttendanceDto>> GetAttendance(int id)
